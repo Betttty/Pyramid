@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "hog.h"
+#include "omp.h"  
 /**
 
 <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  -->
@@ -602,8 +603,8 @@ vl_hog_put_image (VlHog * self,
 {
   vl_size hogStride ;
   vl_size channelStride = width * height ;
-  vl_index x, y ;
-  vl_uindex k ;
+  // vl_index x, y ;
+  // vl_uindex k ;
 
   assert(self) ;
   assert(image) ;
@@ -611,12 +612,19 @@ vl_hog_put_image (VlHog * self,
   /* clear features */
   vl_hog_prepare_buffers(self, width, height, cellSize) ;
   hogStride = self->hogWidth * self->hogHeight ;
+  int h = (signed)height - 1;
+  int w = (signed)width - 1;
 
 #define at(x,y,k) (self->hog[(x) + (y) * self->hogWidth + (k) * hogStride])
 
+  omp_set_num_threads(8);
   /* compute gradients and map the to HOG cells by bilinear interpolation */
-  for (y = 1 ; y < (signed)height - 1 ; ++y) {
-    for (x = 1 ; x < (signed)width - 1 ; ++x) {
+#pragma omp parallel for
+  for (int y = 1 ; y < h; ++y) {
+    // printf("y: %lld, Thread %d\n", y, omp_get_thread_num());
+    // std::cout() << "y: " << y << " t: " << omp_get_thread_num();
+
+    for (int x = 1 ; x < w; ++x) {
       float gradx = 0 ;
       float grady = 0 ;
       float grad ;
@@ -624,7 +632,7 @@ vl_hog_put_image (VlHog * self,
       vl_index orientationBins [2] = {-1,-1} ;
       vl_index orientation = 0 ;
       float hx, hy, wx1, wx2, wy1, wy2 ;
-      vl_index binx, biny, o ;
+      vl_index binx, biny; //, o ;
 
       /*
        Compute the gradient at (x,y). The image channel with
@@ -633,7 +641,7 @@ vl_hog_put_image (VlHog * self,
       {
         float const * iter = image + y * width + x ;
         float grad2 = 0 ;
-        for (k = 0 ; k < numChannels ; ++k) {
+        for (int k = 0 ; k < numChannels ; ++k) {
           float gradx_ = *(iter + 1) - *(iter - 1) ;
           float grady_ = *(iter + width)  - *(iter - width) ;
           float grad2_ = gradx_ * gradx_ + grady_ * grady_ ;
@@ -655,7 +663,8 @@ vl_hog_put_image (VlHog * self,
        The next numOriantations are the symmetric ones, for a total
        of 2*numOrientation directed orientations.
        */
-      for (k = 0 ; k < self->numOrientations ; ++k) {
+// #pragma omp parallel for
+      for (int k = 0 ; k < self->numOrientations ; ++k) {
         float orientationScore_ = gradx * self->orientationX[k] +  grady * self->orientationY[k] ;
         vl_index orientationBin_ = k ;
         if (orientationScore_ < 0) {
@@ -683,7 +692,7 @@ vl_hog_put_image (VlHog * self,
         orientationBins[1] = -1 ;
       }
 
-      for (o = 0 ; o < 2 ; ++o) {
+      for (int o = 0 ; o < 2 ; ++o) {
         /*
          Accumulate the gradient. hx is the distance of the
          pixel x to the cell center at its left, in units of cellSize.

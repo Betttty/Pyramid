@@ -23,17 +23,18 @@ int main()
         ReadLabelsFromFile(mImageLabels, "labels_ibug_300W_test.xml");
         save_ImageLabels(mImageLabels, "mImageLabels-test.bin");
     }
-    std::cout << "²âÊÔÊý¾ÝÒ»¹²ÓÐ: " <<  mImageLabels.size() << std::endl;
+    std::cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½: " <<  mImageLabels.size() << std::endl;
 	*******************/
 
     ldmarkmodel modelt;
     std::string modelFilePath = "roboman-landmark-model.bin";
     while(!load_ldmarkmodel(modelFilePath, modelt)){
-        std::cout << "ÎÄ¼þ´ò¿ª´íÎó£¬ÇëÖØÐÂÊäÈëÎÄ¼þÂ·¾¶." << std::endl;
+        std::cout << "ï¿½Ä¼ï¿½ï¿½ò¿ª´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Â·ï¿½ï¿½." << std::endl;
         std::cin >> modelFilePath;
     }
 
-    cv::VideoCapture mCamera(0);
+    cv::VideoCapture mCamera("./show.mp4");
+
     if(!mCamera.isOpened()){
         std::cout << "Camera opening failed..." << std::endl;
         system("pause");
@@ -57,12 +58,14 @@ int main()
 //            cv::putText(Image, ss.str(), cv::Point(x, y), 0.5, 0.5, cv::Scalar(0, 0, 255));
             cv::circle(Image, cv::Point(x, y), 2, cv::Scalar(0, 0, 255), -1);
         }
-        cv::imshow("Camera", Image);
+        // cv::imshow("Camera", Image);
         if(27 == cv::waitKey(5)){
             mCamera.release();
             cv::destroyAllWindows();
             break;
         }
+
+        // std::cout << clock() << std::endl;
     }
 
     system("pause");

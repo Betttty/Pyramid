@@ -36,6 +36,18 @@ private:
     }
 };
 
+// print debug
+void PrintDebug(double prevTs, double currTs, const char* message) {
+    bool isEnabled = true;
+    if (isEnabled == true) {
+        if (prevTs == 0) {
+            std::cout << std::dec << (int)(currTs * 1000000 / CLOCKS_PER_SEC) << " " << (int)((0) * 1000000 / CLOCKS_PER_SEC ) << "\t\t\t[CalculateHogDescriptor] " << message << std::endl;
+        }
+        else {
+            std::cout << std::dec << (int)(currTs * 1000000 / CLOCKS_PER_SEC) << " " << (int)((currTs - prevTs) * 1000000 / CLOCKS_PER_SEC ) << "\t\t\t[CalculateHogDescriptor] " << message << std::endl;
+        }
+    }
+}
 
 cv::Mat CalculateHogDescriptor(cv::Mat &src, cv::Mat shape, std::vector<int> LandmarkIndexs, std::vector<int> eyes_index, HoGParam mHoGParam){
     assert(shape.rows==1 && eyes_index.size()==4);
@@ -89,7 +101,12 @@ cv::Mat CalculateHogDescriptor(cv::Mat &src, cv::Mat shape, std::vector<int> Lan
 
         roiImg.convertTo(roiImg, CV_32FC1); // vl_hog_put_image expects a float* (values 0.0f-255.0f)
         VlHog* hog = vl_hog_new(VlHogVariant::VlHogVariantUoctti, mHoGParam.num_bins, false); // transposed (=col-major) = false
+
+        double begin = clock();
         vl_hog_put_image(hog, (float*)roiImg.data, roiImg.cols, roiImg.rows, 1, mHoGParam.cell_size); // (the '1' is numChannels)
+        double end = clock();
+        PrintDebug(begin, end, "vl_hog_put_image");
+        
         int ww = static_cast<int>(vl_hog_get_width(hog)); // assert ww == hh == numCells
         int hh = static_cast<int>(vl_hog_get_height(hog));
         int dd = static_cast<int>(vl_hog_get_dimension(hog)); // assert ww=hogDim1, hh=hogDim2, dd=hogDim3
